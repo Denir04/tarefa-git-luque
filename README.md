@@ -1,4 +1,26 @@
 # Documentação
 Negócio 
 =============
-O negócio é...
+
+Problema/Oportunidade
+=====================
+
+Atividades
+==========
+
+Processos
+==========
+
+Regras de negócio
+==================
+
+Stakeholders
+============
+
+Vocabulário
+============
+
+Requisitos
+===========
+
+
