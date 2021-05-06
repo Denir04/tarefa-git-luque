@@ -20,7 +20,7 @@ Stakeholders
 - Equipe de desenvolvimento
 - Dono da instituição 
 - Professor de matemática
-============
+===========================
 
 Vocabulário
 ============
