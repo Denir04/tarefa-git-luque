@@ -14,7 +14,9 @@ Processos
 Regras de negócio
 ==================
 
-Stakeholders:
+Stakeholders
+============
+
 - Equipe de desenvolvimento
 - Dono da instituição 
 - Professor de matemática
