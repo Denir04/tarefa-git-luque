@@ -28,10 +28,24 @@ Todos os meses é realizado a emissão das folhas de pagamentos para os funcion�
 
 Regras de negócio
 ==================
-- Os docentes requerem que os resultados obtidos pelos cálculos mostrem até a quarta casa decimal. Exemplo: o resultado obtido de 17,9345780, será mostrado apenas 17,9345.
+- RN01: Os professores devem liberar os alunos no horário do intervalo
+  Todos os professores devem liberar os alunos no horário determinado, que são às 14:40 e 16:40. Os intervalos são de 20 minutos. Após passado os 20 minutos, os alunos devem retornar voluntariamente a sala de aula.
+
+- RN02: Todos os alunos devem estar uniformizados para entrarem na escola
+  Os alunos precisam estar uniformizados para entrarem na escola. Os alunos recebem quando se matriculam duas camisas da instituição nos seus respectivos tamanhos. Na própria instituição também é possível comprar um uniforme novo. Se um aluno vier sem o uniforme ele será barrado e não poderá entrar na escola.
+
+- RN03: Os professores precisam chegar em seus horários e sem faltas, com exceção em casos excepcionais
+  Cada professor possui uma ou mais aulas no período de uma semana. Eles precisam cumprir com os horários de aulas que foram atribuidos a eles. Caso atrase ou falte, o professor precisará apresentar uma justificativa com provas dentro do periódo de uma semana. Caso não tenha uma justificativa plausível, perderá seus pontos conforme aponta a tabela abaixo (RN04). Se ele perder todos os seus 20 pontos ele será exonerado.
+
+- RN04: Tabela de perda de pontos
+                  Infração                                        Pontos perdidos
+Atraso superior a 10 minutos e inferior a 30 minutos                    2
+Atraso superior ou igual a 30 minutos e inferior a 1 hora               3
+Atraso superior ou igual a 1 hora                                       4
+Falta                                                                   5 
 
 
-Stakeholders
+Stakeholders 
 ============
 - Equipe de desenvolvimento
 - Dono da instituição 
@@ -45,14 +59,14 @@ Vocabulário
 
 Requisitos funcionais
 =====================
-- O sistema deve conseguir realizar cálculos de área e perímetro de figuras geométricas.
-- O sistema deve permitir que o usuário consiga realizar cálculos com números que contenham casas decimais.
-- O sistema deve ser capaz de conseguir determinar se o usuário acertou a resposta ou não, caso tenha acertado, ele deve exibir uma mensagem de confirmação.
+- RF01: O sistema deve conseguir realizar cálculos de área e perímetro de figuras geométricas.
+- RF02: O sistema deve permitir que o usuário consiga realizar cálculos com números que contenham casas decimais.
+- RF03: O sistema deve ser capaz de conseguir determinar se o usuário acertou a resposta ou não, caso tenha acertado, ele deve exibir uma mensagem de confirmação.
 
 Requisitos não funcionais
 ========================
-- Compatibilidade com o Windows XP e 7.
-- Tempo de resposta dos resultados de no máximo 2 segundos.
+- RNF01: Compatibilidade com o Windows XP e 7.
+- RNF02: Tempo de resposta dos resultados de no máximo 2 segundos.
 - O sistema deve ser amigável.
 
 
