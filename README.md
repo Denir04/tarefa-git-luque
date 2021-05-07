@@ -44,9 +44,9 @@ Vocabulário
 - Formas geométricas: São os formatos das coisas que observamos e são constituídas por um conjunto de pontos.
 
 Requisitos funcionais
-===========
+=====================
 
-Requistos não funcionais
+Requisitos não funcionais
 ========================
 - Compatibilidade com o Windows XP e 7.
 - Tempo de resposta dos resultados de no máximo 2 segundos.
