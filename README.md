@@ -43,11 +43,11 @@ Vocabulário
 - Área e perímetro: Os conceitos de área e perímetro são utilizados para determinar as medidas de alguma figura.
 - Formas geométricas: São os formatos das coisas que observamos e são constituídas por um conjunto de pontos.
 
-Requisitos
+Requisitos funcionais
 ===========
-* Requisitos funcionais
 
-* Requistos não funcionais
+Requistos não funcionais
+========================
 - Compatibilidade com o Windows XP e 7.
 - Tempo de resposta dos resultados de no máximo 2 segundos.
 - O sistema deve ser amigável.
