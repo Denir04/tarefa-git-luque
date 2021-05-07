@@ -38,11 +38,11 @@ Regras de negócio
   - Cada professor possui uma ou mais aulas no período de uma semana. Eles precisam cumprir com os horários de aulas que foram atribuidos a eles. Caso atrase ou falte, o professor precisará apresentar uma justificativa com provas dentro do periódo de uma semana. Caso não tenha uma justificativa plausível, perderá seus pontos conforme aponta a tabela abaixo (RN04). Se ele perder todos os seus 20 pontos ele será exonerado.
 
 - RN04: Tabela de perda de pontos       
-    - Infrações                                      
+    - Infrações:                                     
         - Atraso superior a 10 minutos e inferior a 30 minutos a perda será de 2 pontos;
         - Atraso superior ou igual a 30 minutos e inferior a 1 hora a perda será de 3 pontos;            
         - Atraso superior ou igual a 1 hora a perda será de 4 pontos;                                      
-        - Faltaa perda será de 5 pontos.                                                               
+        - Falta a perda será de 5 pontos.                                                               
 
 
 Stakeholders 
@@ -67,7 +67,7 @@ Requisitos não funcionais
 ========================
 - RNF01: Compatibilidade com o Windows XP e 7.
 - RNF02: Tempo de resposta dos resultados de no máximo 2 segundos.
-- O sistema deve ser amigável.
+- RNF03: O sistema deve ser amigável.
 
 
 
