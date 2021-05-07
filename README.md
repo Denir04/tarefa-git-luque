@@ -42,7 +42,7 @@ Regras de negócio
         - Atraso superior a 10 minutos e inferior a 30 minutos a perda será de 2 pontos;
         - Atraso superior ou igual a 30 minutos e inferior a 1 hora a perda será de 3 pontos;            
         - Atraso superior ou igual a 1 hora a perda será de 4 pontos;                                      
-        - Falta a perda será de 5 pontos.                                                               
+        - Em Falta a perda será de 5 pontos.                                                               
 
 
 Stakeholders 
