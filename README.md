@@ -45,6 +45,9 @@ Vocabulário
 
 Requisitos funcionais
 =====================
+- O sistema deve conseguir realizar cálculos de área e perímetro de figuras geométricas.
+- O sistema deve permitir que o usuário consiga realizar cálculos com números que contenham casas decimais.
+- O sistema deve ser capaz de conseguir determinar se o usuário acertou a resposta ou não, caso tenha acertado, ele deve exibir uma mensagem de confirmação.
 
 Requisitos não funcionais
 ========================
