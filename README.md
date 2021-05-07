@@ -28,6 +28,8 @@ Todos os meses é realizado a emissão das folhas de pagamentos para os funcion�
 
 Regras de negócio
 ==================
+- Os docentes requerem que os resultados obtidos pelos cálculos mostrem até a quarta casa decimal. Exemplo: o resultado obtido de 17,9345780, será mostrado apenas 17,9345.
+
 
 Stakeholders
 ============
@@ -43,5 +45,12 @@ Vocabulário
 
 Requisitos
 ===========
+* Requisitos funcionais
+
+* Requistos não funcionais
+- Compatibilidade com o Windows XP e 7.
+- Tempo de resposta dos resultados de no máximo 2 segundos.
+- O sistema deve ser amigável.
+
 
 
