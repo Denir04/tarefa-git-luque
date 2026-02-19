@@ -1,0 +1,542 @@
+stepback: true
+command_type: system
+
+pre:
+  - func: "fetch source"
+  - func: "export variables"
+
+post:
+  - func: "upload artifacts"
+  - func: "upload shared library files"
+
+buildvariants:
+
+  - name: ubuntu1404-64
+    display_name: Ubuntu 14.04
+    disable: true
+    expansions:
+      _platform: ubuntu1404-64
+    run_on: ubuntu1404-build
+    tasks:
+      - name: "build"
+      - name: "unit_tests"
+      - name: "integration_tests_local"
+        run_on: ubuntu1404-build
+  - name: ubuntu1604-64
+    display_name: Ubuntu 16.04
+    disable: true
+    expansions:
+      _platform: ubuntu1604-64
+    run_on: ubuntu1604-build
+    tasks:
+      - name: "build"
+      - name: "unit_tests"
+      - name: "integration_tests_local"
+        run_on: ubuntu1604-build
+  - name: ubuntu2204-64
+    display_name: Ubuntu 22.04
+    expansions:
+      _platform: ubuntu2204-64
+    run_on: ubuntu2204-small
+    tasks:
+      - name: "build"
+      - name: "unit_tests"
+      - name: "integration_tests_local"
+      - name: "integration_tests_local_with_ssl"
+      - name: "integration_tests_local_with_gssapi"
+  - name: ubuntu2204-arm64
+    display_name: Ubuntu 22.04 Arm
+    disable: true
+    expansions:
+      _platform: ubuntu2204-arm64
+    run_on: ubuntu2204-arm64-small
+    tasks:
+      - name: "build"
+      - name: "unit_tests"
+      - name: "integration_tests_local"
+        run_on: ubuntu2204-arm64-small
+  - name: rhel93
+    display_name: RHEL 9.3
+    expansions:
+      _platform: rhel93
+    run_on: rhel93-small
+    tasks:
+      - name: "build"
+      - name: "unit_tests"
+      - name: "integration_tests_local"
+      - name: "integration_tests_local_with_ssl"
+        run_on: rhel93-small
+  - name: win64
+    display_name: Windows 64
+    expansions:
+      _platform: win64
+    run_on: windows-64-vs2019-large
+    tasks:
+      - name: "build"
+      - name: "unit_tests"
+      - name: "integration_tests_local"
+      - name: "integration_tests_local_with_ssl"
+      - name: "sign_msi"
+        run_on: ubuntu2204-large
+  - name: macos
+    display_name: macOS x64/OpenSSL 3.x
+    disable: true
+    expansions:
+      _platform: macos
+    run_on: macos-14
+    tasks:
+      - name: "build"
+      - name: "unit_tests"
+      - name: "integration_tests_local"
+      - name: "sign_dmg"
+  - name: macos-arm64
+    display_name: macOS Arm/OpenSSL 3.x
+    disable: true
+    expansions:
+      _platform: macos-arm64
+    run_on: macos-14-arm64
+    tasks:
+      - name: "build"
+      - name: "unit_tests"
+      - name: "integration_tests_local"
+      - name: "sign_dmg"
+
+tasks:
+  - name: "build"
+    commands:
+      - func: "build libmongosql"
+      - func: "build odbc driver"
+      - func: "build msi installer"
+      - func: "build dmg installer"
+
+  - name: "integration_tests_local"
+    depends_on:
+      - name: build
+    commands:
+      - func: "fetch msi"
+      - func: "fetch shared library files"
+      - func: "run local integration tests"
+
+  - name: "integration_tests_local_with_ssl"
+    depends_on:
+      - name: build
+    commands:
+      - func: "fetch msi"
+      - func: "fetch shared library files"
+      - func: "run local integration tests with SSL"
+
+  - name: "integration_tests_local_with_gssapi"
+    depends_on:
+      - name: build
+    commands:
+      - func: "fetch shared library files"
+      - func: "run local integration tests with GSSAPI auth"
+
+  - name: "sign_dmg"
+    depends_on:
+      - name: integration_tests_local
+    commands:
+      - func: "fetch dmg"
+      - func: "sign dmg installer"
+      - func: "upload macos release packages"
+
+  - name: "sign_msi"
+    depends_on:
+      - name: integration_tests_local
+    commands:
+      - func: "fetch msi"
+      - func: "sign msi installer"
+      - func: "upload windows release packages"
+
+  - name: unit_tests
+    commands:
+      - func: "build libmongosql"
+      - func: "run unit tests"
+
+functions:
+  "build dmg installer":
+    command: shell.exec
+    type: test
+    params:
+      build_variants:
+          - macos
+      script: |
+          ${PREPARE_SHELL}
+          ${SCRIPT_DIR}/create-dmg.sh
+
+  "build msi installer":
+    command: shell.exec
+    type: test
+    params:
+      build_variants:
+          - win32
+          - win64
+      script: |
+          ${PREPARE_SHELL}
+          ${SCRIPT_DIR}/create-msi.sh
+
+  "build libmongosql":
+    - command: shell.exec
+      type: setup
+      params:
+        working_dir: mongo-odbc-driver
+        script: |
+            git submodule update --init --recursive
+    - command: shell.exec
+      type: test
+      params:
+        working_dir: ..
+        script: |
+            ${PREPARE_SHELL}
+            ${MYSQL_SCRIPT_DIR}/install-bison.sh
+            ${MYSQL_SCRIPT_DIR}/build.sh
+
+  "build odbc driver":
+    command: shell.exec
+    type: test
+    params:
+      script: |
+          ${PREPARE_SHELL}
+          ${SCRIPT_DIR}/build-mongo-odbc.sh
+
+  "export variables":
+    - command: shell.exec
+      params:
+        silent: true
+        working_dir: mongo-odbc-driver/mongodb-odbc-driver/bin
+        script: |
+          if [ "Windows_NT" = "$OS" ]; then
+              set -o igncr
+          fi
+
+          export PLATFORM='${_platform|unset}'
+          . "./platforms.sh"
+          . "./prepare-shell.sh"
+
+          export S3_ARTIFACTS_DIR='mongo-odbc-driver/artifacts/${version_id}/${build_variant}'
+          export S3_RELEASES_DIR='mongo-odbc-driver/releases/${version_id}'
+
+          export RELEASE_BASENAME="mongo-odbc-$PLATFORM_NAME-$PLATFORM_ARCH"
+
+          export BIC_PROD_SERVER='${bic_prod_server}'
+          export BIC_PROD_PORT='${bic_prod_port}'
+          export BIC_PROD_USER='${bic_prod_user}'
+          export BIC_PROD_PASSWORD='${bic_prod_password}'
+
+          export BIC_DEV_SERVER='${bic_dev_server}'
+          export BIC_DEV_PORT='${bic_dev_port}'
+          export BIC_DEV_USER='${bic_dev_user}'
+          export BIC_DEV_PASSWORD='${bic_dev_password}'
+          
+          # create expansions from values calculated above
+          mkdir -p $ARTIFACTS_DIR
+          cat <<EOT > $ARTIFACTS_DIR/expansions.yml
+          ARTIFACTS_DIR: "$ARTIFACTS_DIR"
+          SCRIPT_DIR: "$SCRIPT_DIR"
+          PROJECT_DIR: "$PROJECT_DIR"
+          MYSQL_SCRIPT_DIR: "$MYSQL_SCRIPT_DIR"
+          PLATFORM_NAME: "$PLATFORM_NAME"
+          PLATFORM_ARCH: "$PLATFORM_ARCH"
+          S3_ARTIFACTS_DIR: "$S3_ARTIFACTS_DIR"
+          S3_RELEASES_DIR: "$S3_RELEASES_DIR"
+          RELEASE_BASENAME: "$RELEASE_BASENAME"
+          MONGOSQL_AUTH_PROJECT_DIR: "$MONGOSQL_AUTH_PROJECT_DIR"
+          PREPARE_SHELL: |
+             if [ "Windows_NT" = "$OS" ]; then
+                 set -o igncr
+                 export SHELLOPTS
+             fi
+             export PLATFORM="$PLATFORM"
+             export PROJECT_DIR="$PROJECT_DIR"
+
+             export BIC_PROD_SERVER="$BIC_PROD_SERVER"
+             export BIC_PROD_PORT="$BIC_PROD_PORT"
+             export BIC_PROD_USER="$BIC_PROD_USER"
+             export BIC_PROD_PASSWORD="$BIC_PROD_PASSWORD"
+
+             export BIC_DEV_SERVER="$BIC_DEV_SERVER"
+             export BIC_DEV_PORT="$BIC_DEV_PORT"
+             export BIC_DEV_USER="$BIC_DEV_USER"
+             export BIC_DEV_PASSWORD="$BIC_DEV_PASSWORD"          
+          EOT
+
+    - command: expansions.update
+      params:
+        file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/expansions.yml
+
+  "fetch dmg":
+    - command: s3.get
+      params:
+        build_variants:
+          - macos
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        remote_file: ${S3_ARTIFACTS_DIR}/mongodb-odbc-unsigned.dmg
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/pkg/mongodb-odbc.dmg
+        bucket: mciuploads
+
+  "fetch msi":
+    - command: s3.get
+      params:
+        build_variants:
+          - win32
+          - win64
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        remote_file: ${S3_ARTIFACTS_DIR}/mongodb-odbc-unsigned.msi
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/pkg/mongodb-odbc.msi
+        bucket: mciuploads
+
+  "fetch shared library files":
+    - command: s3.get
+      params:
+        build_variants:
+            - macos
+            - macos-arm64
+            - ubuntu1404-64
+            - ubuntu1604-64
+            - ubuntu2204-64
+            - ubuntu2204-arm64
+            - rhel70
+            - rhel93
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        remote_file: ${S3_ARTIFACTS_DIR}/libmdbodbca.so
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/drivers/libmdbodbca.so
+        bucket: mciuploads
+    - command: s3.get
+      params:
+        build_variants:
+            - macos
+            - macos-arm64
+            - ubuntu1404-64
+            - ubuntu1604-64
+            - ubuntu2204-64
+            - ubuntu2204-arm64
+            - rhel70
+            - rhel93
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        remote_file: ${S3_ARTIFACTS_DIR}/libmdbodbcw.so
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/drivers/libmdbodbcw.so
+        bucket: mciuploads
+
+  "fetch source":
+    - command: shell.exec
+      params:
+        silent: true
+        script: |
+          rm -rf mongo-odbc-driver
+    - command: git.get_project
+      params:
+        directory: mongo-odbc-driver
+
+  "run local integration tests":
+    - command: shell.exec
+      type: test
+      params:
+        script: |
+          ${PREPARE_SHELL}
+          ${SCRIPT_DIR}/start-mongod.sh
+          ${SCRIPT_DIR}/start-sqlproxy.sh
+          ${SCRIPT_DIR}/run-local-integration-tests.sh
+
+  "run local integration tests with SSL":
+    - command: shell.exec
+      type: system
+      params:
+        script: |
+          ${PREPARE_SHELL}
+          export TEST_SET='SSL'
+          ${SCRIPT_DIR}/start-mongod.sh
+          ${SCRIPT_DIR}/start-sqlproxy.sh
+          ${SCRIPT_DIR}/run-local-integration-tests.sh
+
+  "run local integration tests with GSSAPI auth":
+    - command: shell.exec
+      type: test
+      params:
+        env:
+          GSSAPI_USER: "${GSSAPI_USER}"
+          GSSAPI_PASSWD: "${GSSAPI_PASSWD}"
+          GSSAPI_SERVICENAME: "mongosql2"
+        working_dir: mongo-odbc-driver/mongodb-odbc-driver
+        script: |
+          ${PREPARE_SHELL}
+          export TEST_SET='GSSAPI'
+          export GSSAPI_USER="$GSSAPI_USER"
+          export GSSAPI_PASSWD="$GSSAPI_PASSWD"
+          ${SCRIPT_DIR}/start-sqlproxy.sh
+          ${SCRIPT_DIR}/run-local-integration-tests.sh
+
+  "run unit tests":
+    command: shell.exec
+    type: test
+    params:
+      script: |
+          ${PREPARE_SHELL}
+          ${MYSQL_SCRIPT_DIR}/run-unit-tests.sh
+
+  "sign dmg installer":
+      - command: shell.exec
+        params:
+          env:
+            MACOS_NOTARY_KEY: "${mac_notary_service_key_id}"
+            MACOS_NOTARY_SECRET: "${mac_notary_service_secret}"
+          script: |
+            "${SCRIPT_DIR}/sign-dmg-contents.sh"
+
+  "sign msi installer":
+    - command: shell.exec
+      type: system
+      params:
+        silent: true
+        script: |
+          docker login --username ${sql_engines_artifactory_username} --password ${sql_engines_artifactory_auth_token} ${release_tools_container_registry}
+    - command: shell.exec
+      type: system
+      params:
+        silent: true
+        working_dir: mongo-odbc-driver/mongodb-odbc-driver/artifacts/pkg/
+        env:
+          GRS_CONFIG_USER1_USERNAME: "${bic_odbc_garasign_username}"
+          GRS_CONFIG_USER1_PASSWORD: "${bic_odbc_garasign_password}"
+        script: |
+          docker run \
+            -e GRS_CONFIG_USER1_USERNAME \
+            -e GRS_CONFIG_USER1_PASSWORD \
+            --rm \
+            -v $(pwd):$(pwd) -w $(pwd) \
+            ${garasign_jsign_image} \
+            /bin/bash -c "jsign -a ${authenticode_key_name} --replace --tsaurl http://timestamp.digicert.com -d SHA-256 mongodb-odbc.msi"
+
+  "upload artifacts":
+    - command: s3.put
+      params:
+        build_variants:
+            - win32
+            - win64
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/pkg/mongodb-odbc.msi
+        remote_file: ${S3_ARTIFACTS_DIR}/mongodb-odbc-unsigned.msi
+        content_type: application/x-msi
+        bucket: mciuploads
+        permissions: public-read
+        display_name: "Unsigned Installer (.msi)"
+    - command: s3.put
+      params:
+        build_variants:
+            - macos
+            - macos-arm64
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/pkg/mongodb-odbc.dmg
+        remote_file: ${S3_ARTIFACTS_DIR}/mongodb-odbc-unsigned.dmg
+        content_type: application/x-apple-diskimage
+        bucket: mciuploads
+        permissions: public-read
+        display_name: "Unsigned Installer (.dmg)"
+    - command: s3.put
+      params:
+        optional: true
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/mlaunch/data/mongod.log
+        remote_file: ${S3_ARTIFACTS_DIR}/${task_name}/mongod.log
+        content_type: text/plain
+        bucket: mciuploads
+        permissions: public-read
+        display_name: mongod.log
+    - command: s3.put
+      params:
+        optional: true
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/mongosqld/mongosqld.log
+        remote_file: ${S3_ARTIFACTS_DIR}/${task_name}/mongosqld.log
+        content_type: text/plain
+        bucket: mciuploads
+        permissions: public-read
+        display_name: mongosqld.log
+    - command: s3.put
+      params:
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_files_include_filter:
+            - mongo-odbc-driver/mongodb-odbc-driver/artifacts/log/*.log*
+        remote_file: ${S3_ARTIFACTS_DIR}/${task_name}/
+        content_type: text/plain
+        bucket: mciuploads
+        permissions: public-read
+        display_name: "Log File - "
+
+  "upload shared library files":
+    - command: s3.put
+      params:
+        build_variants:
+            - macos
+            - macos-arm64
+            - ubuntu1404-64
+            - ubuntu1604-64
+            - ubuntu2204-64
+            - ubuntu2204-arm64
+            - rhel70
+            - rhel93
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/drivers/libmdbodbca.so
+        remote_file: ${S3_ARTIFACTS_DIR}/libmdbodbca.so
+        content_type: application/x-sharedlib
+        bucket: mciuploads
+        permissions: public-read
+        display_name: "ANSI Driver (.so)"
+    - command: s3.put
+      params:
+        build_variants:
+            - macos
+            - macos-arm64
+            - ubuntu1404-64
+            - ubuntu1604-64
+            - ubuntu2204-64
+            - ubuntu2204-arm64
+            - rhel70
+            - rhel93
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/drivers/libmdbodbcw.so
+        remote_file: ${S3_ARTIFACTS_DIR}/libmdbodbcw.so
+        content_type: application/x-sharedlib
+        bucket: mciuploads
+        permissions: public-read
+        display_name: "Unicode Driver (.so)"
+
+  "upload windows release packages":
+    - command: s3.put
+      params:
+        build_variants:
+            - win32
+            - win64
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/pkg/mongodb-odbc.msi
+        remote_file: ${S3_RELEASES_DIR}/${RELEASE_BASENAME}.msi
+        content_type: application/x-msi
+        bucket: mciuploads
+        permissions: public-read
+        display_name: "Signed Installer (.msi)"
+
+  "upload macos release packages":
+    - command: s3.put
+      params:
+        build_variants:
+            - macos
+            - macos-arm64
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: mongo-odbc-driver/mongodb-odbc-driver/artifacts/pkg/mongodb-odbc-signed.dmg
+        remote_file: ${S3_RELEASES_DIR}/${RELEASE_BASENAME}.dmg
+        content_type: application/x-apple-diskimage
+        bucket: mciuploads
+        permissions: public-read
+        display_name: "Signed Installer (.dmg)"
